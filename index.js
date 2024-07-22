@@ -1,19 +1,19 @@
 //import {WebSocketServer} from 'ws';
 var WebSocketServer = require('ws').WebSocketServer;
-var http = require('http');
 
-var server = http.createServer(function(request, response) {
-  console.log((new Date()) + ' Received request for ' + request.url);
-  response.writeHead(200, {'Content-Type': 'text/plain'});
-  response.write('Hello World!');
-  response.end();
-});
-server.listen(80, function() {
-  console.log((new Date()) + ' Server is listening on port 80');
-});
+// var http = require('http');
+// var server = http.createServer(function(request, response) {
+//   console.log((new Date()) + ' Received request for ' + request.url);
+//   response.writeHead(200, {'Content-Type': 'text/plain'});
+//   response.write('Hello World!');
+//   response.end();
+// });
+// server.listen(80, function() {
+//   console.log((new Date()) + ' Server is listening on port 80');
+// });
 
 const wss = new WebSocketServer({
-  host: '0.0.0.0',
+  // host: '0.0.0.0',
   port: 3000
 });
 // --
