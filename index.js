@@ -78,7 +78,9 @@ const opponentName = playerName => {
   }
   return null
 }
-
+wss.on('open', () => {
+  console.log('ws connection ok')
+})
 wss.on('connection', ws => {
   const send = data => {
     ws.send(JSON.stringify(data))
