@@ -1,4 +1,15 @@
-import {WebSocketServer} from 'ws';
+//import {WebSocketServer} from 'ws';
+var WebSocketServer = require('ws').WebSocketServer;
+var http = require('http');
+
+var server = http.createServer(function(request, response) {
+  console.log((new Date()) + ' Received request for ' + request.url);
+  response.writeHead(404);
+  response.end();
+});
+server.listen(80, function() {
+  console.log((new Date()) + ' Server is listening on port 80');
+});
 
 const wss = new WebSocketServer({
   host: '0.0.0.0',
