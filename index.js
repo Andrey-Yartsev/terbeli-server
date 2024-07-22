@@ -15,6 +15,8 @@ var WebSocketServer = require('ws').WebSocketServer;
 const wss = new WebSocketServer({
   // host: '0.0.0.0',
   port: 3000
+}, () => {
+  console.log('asd')
 });
 // --
 const TURN_PLAYER_1 = 1
@@ -79,7 +81,7 @@ const opponentName = playerName => {
   return null
 }
 wss.on('open', () => {
-  console.log('ws connection ok')
+  console.log('ws open ok')
 })
 wss.on('connection', ws => {
   const send = data => {
