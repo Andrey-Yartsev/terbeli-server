@@ -1,6 +1,9 @@
 import {WebSocketServer} from 'ws';
 
-const wss = new WebSocketServer({port: 3000});
+const wss = new WebSocketServer({
+  host: '0.0.0.0',
+  port: 3000
+});
 // --
 const TURN_PLAYER_1 = 1
 const TURN_PLAYER_2 = 2
