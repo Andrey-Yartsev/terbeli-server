@@ -1,5 +1,6 @@
 //import {WebSocketServer} from 'ws';
 var WebSocketServer = require('ws').WebSocketServer;
+const rusname = require('./rusname')
 
 // var http = require('http');
 // var server = http.createServer(function(request, response) {
@@ -13,28 +14,21 @@ var WebSocketServer = require('ws').WebSocketServer;
 // });
 
 const wss = new WebSocketServer({
-  // host: '0.0.0.0',
-  port: 3000
+  //host: '0.0.0.0',
+  port: 8080
 }, () => {
-  console.log('asd')
+  console.log('WebSocket server running...')
 });
+
 // --
 const TURN_PLAYER_1 = 1
 const TURN_PLAYER_2 = 2
 // -------- global state --------------
 const players = {}
+const playersWs = {}
 let playerPairs = []
 const turnPlayers = {}
-// const turnPlayer = playerName => {
-//   let n = 0
-//   playerPairs.forEach(pair => {
-//     if (pair[0] === playerName) {
-//       n = TURN_PLAYER_1
-//     } else if (pair[1] === playerName) {
-//       n = TURN_PLAYER_2
-//     }
-//   })
-// }
+
 const gameId = pair => {
   return pair[0] + ':' + pair[1]
 }
@@ -80,11 +74,13 @@ const opponentName = playerName => {
   }
   return null
 }
+
 wss.on('open', () => {
   console.log('ws open ok')
 })
 wss.on('connection', ws => {
-  const send = data => {
+  ws.on('error', console.error);
+  const sendSelf = data => {
     ws.send(JSON.stringify(data))
     console.log('send: %s', JSON.stringify(data))
   }
@@ -98,18 +94,46 @@ wss.on('connection', ws => {
     ws.send(JSON.stringify(data))
     console.log('send: %s', JSON.stringify(data))
   }
+  const sendToOpponent = (playerName, data) => {
+    const opName = opponentName(playerName)
+    if (!opName) {
+      // no opponent
+      return
+    }
+    if (!playersWs[opName]) {
+
+      console.log('Try to send to ' + opName + ', but player not connected')
+      // sendSelf('opponentGone: ' + playerName)
+      return
+    }
+    wsSend(playersWs[opName], data)
+  }
+  const genName = () => {
+    let name = ''
+    for (let i = 0; i < 20; i++) {
+      let newName = rusname()
+      if (!players[newName]) {
+        // если еще нет игрока с таким именем
+        return newName
+      }
+      return 'name error'
+    }
+
+  }
   // ------------------ state ---------------------------
   let playerName = null
   console.log('connection. set playerName = null')
   // ----------------------------------------------------
   const onMessageActions = {
-    registerPlayer: ({name}) => {
+    registerPlayer: () => {
+      const name = genName()
+      console.log('players: ', players)
       console.log('registering player ', name)
       playerName = name
       players[name] = {}
-      players[name].ws = ws
+      playersWs[name] = ws
       console.log('players: ', players)
-      send({
+      sendSelf({
         type: 'playerRegistered',
         data: {name}
       })
@@ -156,15 +180,34 @@ wss.on('connection', ws => {
         }
       })
     },
+    // excludeFromOnline() {
+    //   // пользователь перешел на другую страницу
+    //   delete players[playerName]
+    //   sendBroadcast({
+    //     type: 'updatePlayersList',
+    //     data: players
+    //   })
+    // },
+    // includeToOnline() {
+    //   if (!players[playerName]) {
+    //     players[playerName] = {}
+    //     sendBroadcast({
+    //       type: 'updatePlayersList',
+    //       data: players
+    //     })
+    //   }
+    // },
     // пользователь покинул игру. леваем оппонента
     leaveGame: () => {
-      let opName = opponentName(playerName)
-      if (opName && players[opName]) {
-        wsSend(players[opName].ws, {
-          type: 'leaveGame',
-          leftPlayerName: playerName
-        })
-      }
+      delete players[playerName]
+      delete playersWs[playerName]
+      // sendToOpponent(playerName, {
+      //   type: 'leaveGame',
+      //   leftPlayerName: playerName
+      // })
+      sendSelf({
+        type: 'leftGame'
+      })
       // remove leaving pair
       playerPairs = playerPairs.filter(pair => {
         if (pair[0] === playerName || pair[1] === playerName) {
@@ -176,41 +219,32 @@ wss.on('connection', ws => {
         type: 'updatePlayerPairs',
         data: playerPairs
       })
+      sendBroadcast({
+        type: 'updatePlayersList',
+        data: players
+      })
     },
-    resetRender: () => {
-      const opName = opponentName(playerName)
-      wsSend(players[opName].ws, {
-        type: 'resetRender'
+    resetGame: () => {
+      sendToOpponent(playerName, {
+        type: 'resetGame',
+        data: {
+          playerName
+        }
       })
     },
     win: () => {
-      const opName = opponentName(playerName)
-      wsSend(players[opName].ws, {
+      sendToOpponent(playerName, {
         type: 'opponentWin'
       })
     }
-    // // name - имя одного из пары
-    // switchPlayer: ({name}) => {
-    //   console.log('was', turnPlayer)
-    //   turnPlayer = turnPlayer === 1 ? 2 : 1
-    //   console.log('now', turnPlayer)
-    //   wss.clients.forEach(client => {
-    //     sendBroadcast(client, {
-    //       type: 'setTurnPlayer',
-    //       data: {
-    //         playerName,
-    //         turnPlayer
-    //       }
-    //     })
-    //   })
-    // }
   }
   const onCloseAction = () => {
     console.log('disconnect:', playerName ? playerName : 'noname')
     if (!playerName) {
       return
     }
-    delete players[playerName] // !
+    delete players[playerName]
+    delete playersWs[playerName]
     playerPairs = playerPairs.filter(pair => {
       return pair[0] === playerName || pair[0] === playerName
     })
@@ -225,10 +259,10 @@ wss.on('connection', ws => {
     sendBroadcast({
       type: 'playerGone',
       data: {
-        name: playerName
+        playerName
       }
     })
-    send({
+    sendSelf({
       type: 'serverDisconnect'
     })
   }
