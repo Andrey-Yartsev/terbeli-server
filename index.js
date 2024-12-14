@@ -116,9 +116,8 @@ wss.on('connection', ws => {
         // если еще нет игрока с таким именем
         return newName
       }
-      return 'name error'
     }
-
+    return 'name error'
   }
   // ------------------ state ---------------------------
   let playerName = null
@@ -199,12 +198,14 @@ wss.on('connection', ws => {
     // },
     // пользователь покинул игру. леваем оппонента
     leaveGame: () => {
+      sendToOpponent(playerName, {
+        type: 'resetGame',
+        data: {
+          playerName
+        }
+      })
       delete players[playerName]
       delete playersWs[playerName]
-      // sendToOpponent(playerName, {
-      //   type: 'leaveGame',
-      //   leftPlayerName: playerName
-      // })
       sendSelf({
         type: 'leftGame'
       })
@@ -222,6 +223,24 @@ wss.on('connection', ws => {
       sendBroadcast({
         type: 'updatePlayersList',
         data: players
+      })
+    },
+    leavePlayerGame: () => {
+      sendToOpponent(playerName, {
+        type: 'resetGame',
+        data: {
+          playerName
+        }
+      })
+      playerPairs = playerPairs.filter(pair => {
+        if (pair[0] === playerName || pair[1] === playerName) {
+          return false
+        }
+        return true
+      })
+      sendBroadcast({
+        type: 'updatePlayerPairs',
+        data: playerPairs
       })
     },
     resetGame: () => {
@@ -243,6 +262,10 @@ wss.on('connection', ws => {
     if (!playerName) {
       return
     }
+    // sendToOpponent(playerName, {
+    //   type: 'leftGame'
+    // })
+
     delete players[playerName]
     delete playersWs[playerName]
     playerPairs = playerPairs.filter(pair => {
