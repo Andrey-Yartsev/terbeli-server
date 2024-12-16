@@ -138,6 +138,10 @@ wss.on('connection', ws => {
       type: 'updatePlayersList',
       data: players
     })
+    sendBroadcast({
+      type: 'updatePlayerPairs',
+      data: playerPairs
+    })
   }
   const onMessageActions = {
     registerPlayer: () => {
@@ -274,22 +278,23 @@ wss.on('connection', ws => {
 
     delete players[playerName]
     delete playersWs[playerName]
+    console.log(playerName + ' уходит. пары до ухода:', playerPairs)
     playerPairs = playerPairs.filter(pair => {
-      return pair[0] === playerName || pair[0] === playerName
+      if (pair[0] === playerName || pair[1] === playerName) {
+        // если в паре есть ушедший игрок, удаляем пару
+        return false
+      }
+      return true
     })
+    console.log('пары после ухода: ', playerPairs)
     sendBroadcast({
       type: 'updatePlayersList',
       data: players
     })
+    //console.log(playerPairs)
     sendBroadcast({
       type: 'updatePlayerPairs',
       data: playerPairs
-    })
-    sendBroadcast({
-      type: 'playerGone',
-      data: {
-        playerName
-      }
     })
     sendSelf({
       type: 'serverDisconnect'
