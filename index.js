@@ -123,23 +123,29 @@ wss.on('connection', ws => {
   let playerName = null
   console.log('connection. set playerName = null')
   // ----------------------------------------------------
+  const registerPlayer = name => {
+    console.log('players: ', players)
+    console.log('registering player ', name)
+    playerName = name
+    players[name] = {}
+    playersWs[name] = ws
+    console.log('players: ', players)
+    sendSelf({
+      type: 'playerRegistered',
+      data: {name}
+    })
+    sendBroadcast({
+      type: 'updatePlayersList',
+      data: players
+    })
+  }
   const onMessageActions = {
     registerPlayer: () => {
       const name = genName()
-      console.log('players: ', players)
-      console.log('registering player ', name)
-      playerName = name
-      players[name] = {}
-      playersWs[name] = ws
-      console.log('players: ', players)
-      sendSelf({
-        type: 'playerRegistered',
-        data: {name}
-      })
-      sendBroadcast({
-        type: 'updatePlayersList',
-        data: players
-      })
+      registerPlayer(name)
+    },
+    registerPlayerByName: ({name}) => {
+      registerPlayer(name)
     },
     playWith: ({name}) => {
       const pair = [playerName, name]
