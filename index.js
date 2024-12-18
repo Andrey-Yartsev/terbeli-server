@@ -101,7 +101,6 @@ wss.on('connection', ws => {
       return
     }
     if (!playersWs[opName]) {
-
       console.log('Try to send to ' + opName + ', but player not connected')
       // sendSelf('opponentGone: ' + playerName)
       return
@@ -169,7 +168,15 @@ wss.on('connection', ws => {
     // turnPlayer - кто закинул кольцо
     addedRing: ({pinN}) => {
       const currentTurnPlayer = turnPlayer(playerName)
-      sendBroadcast({
+      sendToOpponent(playerName, {
+        type: 'addedRing',
+        data: {
+          playerName,
+          turnPlayer: currentTurnPlayer,
+          pinN
+        }
+      })
+      sendSelf({
         type: 'addedRing',
         data: {
           playerName,
@@ -182,7 +189,13 @@ wss.on('connection', ws => {
         console.error('player ' + playerName + ' has gone')
         return
       }
-      sendBroadcast({
+      sendToOpponent(playerName, {
+        type: 'setTurnPlayer',
+        data: {
+          turnPlayer: newTurnPlayer
+        }
+      })
+      sendSelf({
         type: 'setTurnPlayer',
         data: {
           turnPlayer: newTurnPlayer
